@@ -126,7 +126,8 @@ class ReviewBoardBot(BotPlugin):
             msg = 'Review requested: %s, %s//%s/r/%s' % (
                 summary, parsed_url.scheme, parsed_url.netloc, _id
             )
-            self.send(rooms, msg, message_type='groupchat')
+            for room in rooms:
+                self.send(room, msg, message_type='groupchat')
 
     def callback_connect(self):
         self.log('callback_connect')
