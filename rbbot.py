@@ -123,7 +123,7 @@ class ReviewBoardBot(BotPlugin):
             summary = review_request['summary']
             parsed_url = urlparse(RB_API_URL)
 
-            msg = 'Review requested: %s, %s//%s/r/%s' % (
+            msg = 'Review requested: %s, %s://%s/r/%s' % (
                 summary, parsed_url.scheme, parsed_url.netloc, _id
             )
             for room in rooms:
