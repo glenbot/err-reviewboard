@@ -1,0 +1,6 @@
+[Core]
+Name = ReviewBoardBot
+Module = rbbot
+
+[Documentation]
+Description = Monitor review board requests and post to chat
