@@ -14,7 +14,7 @@ try:
     from config import RB_API_URL, RB_USERNAME, RB_PASSWORD
 except ImportError:
     error_msg = """Missing review board settings
-    in config.py. Make sure you have RB_API_URL, RB_API_URL
+    in config.py. Make sure you have RB_API_URL, RB_USERNAME
     and RB_PASSWORD is set."""
     logging.error(error_msg)
     sys.exit(1)
