@@ -1,6 +1,5 @@
 import threading
 import logging
-import sys
 import urllib2
 import base64
 import simplejson
@@ -10,17 +9,7 @@ from urlparse import urlparse
 from errbot.botplugin import BotPlugin
 from config import BOT_DATA_DIR, CHATROOM_PRESENCE
 
-try:
-    from config import RB_API_URL, RB_USERNAME, RB_PASSWORD
-except ImportError:
-    error_msg = """Missing review board settings
-    in config.py. Make sure you have RB_API_URL, RB_USERNAME
-    and RB_PASSWORD is set."""
-    logging.error(error_msg)
-    sys.exit(1)
-
 POLL_INTERVAL = 150
-
 
 class ReviewBoardBot(BotPlugin):
     t = None
@@ -28,20 +17,33 @@ class ReviewBoardBot(BotPlugin):
     poll_started = False
     cache_file = os.path.join(BOT_DATA_DIR, 'rbbot.cache')
 
+    min_err_version = '1.3.0' # it needs the configuration feature
+
+    def get_configuration_template(self):
+        return {'url' : 'http://machine.domain/api', 'username' : 'yourusername','password' : 'yourpassword' }
+
+    def configure(self, configuration):
+        if configuration:
+            if type(configuration) != dict:
+                super(ReviewBoardBot, self).configure(None)
+                raise Exception('Wrong configuration type')
+
+            if not all(key in configuration for key in ('url','username','password')):
+                super(ReviewBoardBot, self).configure(None)
+                raise Exception('Wrong configuration type, it should contain RB_API_URL, RB_USERNAME and RB_PASSWORD entries')
+            if len(configuration) > 3:
+                raise Exception('What else did you try to insert in my config ?')
+        super(ReviewBoardBot, self).configure(configuration)
+
     def log(self, msg, _type='info'):
         l = getattr(logging, _type)
         l('%s: %s' % (self.__class__.__name__, msg))
 
     def start_poll(self):
-        params = {
-            'url': RB_API_URL,
-            'username': RB_USERNAME,
-            'password': RB_PASSWORD
-        }
         self.t = threading.Timer(
             POLL_INTERVAL,
             self.make_request,
-            kwargs=params
+            kwargs=self.config
         )
         self.t.setDaemon(True)  # so it is not locking on exit
         self.t.start()
@@ -121,7 +123,7 @@ class ReviewBoardBot(BotPlugin):
         if rooms:
             _id = review_request['id']
             summary = review_request['summary']
-            parsed_url = urlparse(RB_API_URL)
+            parsed_url = urlparse(self.config['url'])
 
             msg = 'Review requested: %s, %s://%s/r/%s' % (
                 summary, parsed_url.scheme, parsed_url.netloc, _id
@@ -131,6 +133,8 @@ class ReviewBoardBot(BotPlugin):
 
     def callback_connect(self):
         self.log('callback_connect')
+        if not self.config:
+            raise Exception('This plugin needs to be configured')
         if not self.poll_started:
             self.poll_started = True
             self.log('starting polling')
