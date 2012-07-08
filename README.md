@@ -8,14 +8,6 @@ For more information about err you can find it here: [https://github.com/gbin/er
 
 ### Dependencies
 
-The following python packages are required to run this plugin:
-
- - simplejson
-
-Installation:
-
-    pip install simplejson
-
 ### config.py
 
 Make sure you have all the required reviewboard settings in the err config.py

@@ -1,4 +1,3 @@
-import threading
 import logging
 import urllib2
 import base64
@@ -13,11 +12,14 @@ POLL_INTERVAL = 150
 
 class ReviewBoardBot(BotPlugin):
     t = None
-    lock = threading.Lock()
-    poll_started = False
     cache_file = os.path.join(BOT_DATA_DIR, 'rbbot.cache')
 
-    min_err_version = '1.3.0' # it needs the configuration feature
+    min_err_version = '1.4.0' # it needs the polling feature
+    def activate(self):
+        super(ReviewBoardBot, self).activate()
+        if not self.config:
+            raise Exception('This plugin needs to be configured')
+        self.start_poller(POLL_INTERVAL, self.make_request, kwargs=self.config)
 
     def get_configuration_template(self):
         return {'url' : 'http://machine.domain/api', 'username' : 'yourusername','password' : 'yourpassword' }
@@ -37,15 +39,6 @@ class ReviewBoardBot(BotPlugin):
     def log(self, msg, _type='info'):
         l = getattr(logging, _type)
         l('%s: %s' % (self.__class__.__name__, msg))
-
-    def start_poll(self):
-        self.t = threading.Timer(
-            POLL_INTERVAL,
-            self.make_request,
-            kwargs=self.config
-        )
-        self.t.setDaemon(True)  # so it is not locking on exit
-        self.t.start()
 
     def cache_data(self, data):
         f = open(self.cache_file, 'w')
@@ -99,8 +92,6 @@ class ReviewBoardBot(BotPlugin):
                     self.cache_data('%s\n%s' % (current_id, result))
                     self.send_message(review_request)
 
-        self.start_poll()
-
     def get_latest_review_request(self, requests):
         ordered_reviews = {}
         latest_review = None
@@ -130,11 +121,3 @@ class ReviewBoardBot(BotPlugin):
             for room in rooms:
                 self.send(room, msg, message_type='groupchat')
 
-    def callback_connect(self):
-        self.log('callback_connect')
-        if not self.config:
-            raise Exception('This plugin needs to be configured')
-        if not self.poll_started:
-            self.poll_started = True
-            self.log('starting polling')
-            self.start_poll()
