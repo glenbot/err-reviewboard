@@ -25,12 +25,11 @@ class ReviewBoardBot(BotPlugin):
     def configure(self, configuration):
         if configuration:
             if type(configuration) != dict:
-                super(ReviewBoardBot, self).configure(None)
                 raise Exception('Wrong configuration type')
 
             if not all(key in configuration for key in ('url','username','password')):
-                super(ReviewBoardBot, self).configure(None)
                 raise Exception('Wrong configuration type, it should contain RB_API_URL, RB_USERNAME and RB_PASSWORD entries')
+
             if len(configuration) > 3:
                 raise Exception('What else did you try to insert in my config ?')
         super(ReviewBoardBot, self).configure(configuration)
