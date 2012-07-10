@@ -14,7 +14,8 @@ class ReviewBoardBot(BotPlugin):
     t = None
     cache_file = os.path.join(BOT_DATA_DIR, 'rbbot.cache')
 
-    min_err_version = '1.4.0' # it needs the polling feature
+    min_err_version = '1.4.1' # it needs the configuration feature with the new default parsing
+
     def activate(self):
         super(ReviewBoardBot, self).activate()
         if not self.config:
@@ -23,18 +24,6 @@ class ReviewBoardBot(BotPlugin):
 
     def get_configuration_template(self):
         return {'url' : 'http://machine.domain/api', 'username' : 'yourusername','password' : 'yourpassword' }
-
-    def configure(self, configuration):
-        if configuration:
-            if type(configuration) != dict:
-                raise Exception('Wrong configuration type')
-
-            if not all(key in configuration for key in ('url','username','password')):
-                raise Exception('Wrong configuration type, it should contain RB_API_URL, RB_USERNAME and RB_PASSWORD entries')
-
-            if len(configuration) > 3:
-                raise Exception('What else did you try to insert in my config ?')
-        super(ReviewBoardBot, self).configure(configuration)
 
     def log(self, msg, _type='info'):
         l = getattr(logging, _type)
