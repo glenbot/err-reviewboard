@@ -1,6 +1,4 @@
-import threading
 import logging
-import sys
 import urllib2
 import base64
 import simplejson
@@ -10,41 +8,26 @@ from urlparse import urlparse
 from errbot.botplugin import BotPlugin
 from config import BOT_DATA_DIR, CHATROOM_PRESENCE
 
-try:
-    from config import RB_API_URL, RB_USERNAME, RB_PASSWORD
-except ImportError:
-    error_msg = """Missing review board settings
-    in config.py. Make sure you have RB_API_URL, RB_USERNAME
-    and RB_PASSWORD is set."""
-    logging.error(error_msg)
-    sys.exit(1)
-
 POLL_INTERVAL = 150
-
 
 class ReviewBoardBot(BotPlugin):
     t = None
-    lock = threading.Lock()
-    poll_started = False
     cache_file = os.path.join(BOT_DATA_DIR, 'rbbot.cache')
+
+    min_err_version = '1.4.1' # it needs the configuration feature with the new default parsing
+
+    def activate(self):
+        super(ReviewBoardBot, self).activate()
+        if not self.config:
+            raise Exception('This plugin needs to be configured')
+        self.start_poller(POLL_INTERVAL, self.make_request, kwargs=self.config)
+
+    def get_configuration_template(self):
+        return {'url' : 'http://machine.domain/api', 'username' : 'yourusername','password' : 'yourpassword' }
 
     def log(self, msg, _type='info'):
         l = getattr(logging, _type)
         l('%s: %s' % (self.__class__.__name__, msg))
-
-    def start_poll(self):
-        params = {
-            'url': RB_API_URL,
-            'username': RB_USERNAME,
-            'password': RB_PASSWORD
-        }
-        self.t = threading.Timer(
-            POLL_INTERVAL,
-            self.make_request,
-            kwargs=params
-        )
-        self.t.setDaemon(True)  # so it is not locking on exit
-        self.t.start()
 
     def cache_data(self, data):
         f = open(self.cache_file, 'w')
@@ -98,8 +81,6 @@ class ReviewBoardBot(BotPlugin):
                     self.cache_data('%s\n%s' % (current_id, result))
                     self.send_message(review_request)
 
-        self.start_poll()
-
     def get_latest_review_request(self, requests):
         ordered_reviews = {}
         latest_review = None
@@ -121,7 +102,7 @@ class ReviewBoardBot(BotPlugin):
         if rooms:
             _id = review_request['id']
             summary = review_request['summary']
-            parsed_url = urlparse(RB_API_URL)
+            parsed_url = urlparse(self.config['url'])
 
             msg = 'Review requested: %s, %s://%s/r/%s' % (
                 summary, parsed_url.scheme, parsed_url.netloc, _id
@@ -129,9 +110,3 @@ class ReviewBoardBot(BotPlugin):
             for room in rooms:
                 self.send(room, msg, message_type='groupchat')
 
-    def callback_connect(self):
-        self.log('callback_connect')
-        if not self.poll_started:
-            self.poll_started = True
-            self.log('starting polling')
-            self.start_poll()
