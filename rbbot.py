@@ -5,8 +5,18 @@ import simplejson
 import os
 from datetime import datetime
 from urlparse import urlparse
-from errbot.botplugin import BotPlugin
 from config import BOT_DATA_DIR, CHATROOM_PRESENCE
+
+# Backward compatibility
+from errbot.version import VERSION
+from errbot.utils import version2array
+if version2array(VERSION) >= [1,6,0]:
+    from errbot import botcmd, BotPlugin
+else:
+    from errbot.botplugin import BotPlugin
+    from errbot.jabberbot import botcmd
+
+
 
 POLL_INTERVAL = 150
 
